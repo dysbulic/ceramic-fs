@@ -11,7 +11,7 @@ import { IDXContext } from './IDXContext'
 
 // eslint-disable-next-line import/no-anonymous-default-export
 export default () => {
-  const [ceramicURL] = useState(
+  const [ceramicURL, setCeramicURL] = useState(
     // process.env.REACT_APP_CERAMIC_URL ?? 'http://localhost:7007'
     process.env.REACT_APP_CERAMIC_URL ?? 'https://ceramic-clay.3boxlabs.com'
   )

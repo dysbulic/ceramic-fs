@@ -28,7 +28,7 @@ export const useSuggestions = ({ did }) => {
         suggestions = Object.keys(nodes[nodes.length - 1])
         if(search.string !== '') {
           suggestions = suggestions.filter(
-            s => s.startsWith(search.string)
+            s => s.includes(search.string)
           )
         }
       }

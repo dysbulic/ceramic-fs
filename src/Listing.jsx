@@ -6,6 +6,7 @@ import {
 } from '@chakra-ui/react'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { TileDocument } from '@ceramicnetwork/stream-tile'
+import { create as ipfsHttpClient } from 'ipfs-http-client'
 import { useSuggestions } from './useSuggestions'
 import { IDXContext } from './IDXContext'
 import defs from './definitionIDs.json'
@@ -28,37 +29,55 @@ export default () => {
   const [loading, setLoading] = useState(true)
   const [suggestions, setSearch] = useSuggestions({ did })
   const file = useRef(null)
+  const [ipfsURI, setIPFSURI] = useState(
+    process.env.REACT_APP_IPFS_URI ?? '/ip4/127.0.0.1/tcp/5001'
+  )
+  const ipfs = ipfsHttpClient(ipfsURI)
   const toast = useToast()
 
-  const process = async (evt) => {
+  const dispatch = async (evt) => {
     const raw = evt.target.value
     const tag = raw.trim()
 
     setLoading(true)
 
     if(evt.ctrlKey && evt.shiftKey && evt.key === 'Enter') {
-      await idx.set('mïmis', {})
-      toast({
-        title: 'Reset File Paths.',
-        description: 'The filesystem has been cleared.',
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      })
+      if(window.confirm('Clear All Data‽')) {
+        if(!idx.ceramic.did) {
+          alert('¡Connect to Ceramic!')
+        } else {
+          await idx.set('mïmis', {})
+          toast({
+            title: 'Reset File Paths.',
+            description: 'The filesystem has been cleared.',
+            status: 'success',
+            duration: 5000,
+            isClosable: true,
+          })
+        }
+      }
       setLoading(false)
     } else if(evt.ctrlKey && evt.key === 'Enter') {
-      await writePath(tags)
-      toast({
-        title: 'Created Path.',
-        description: `${tags[tags.length - 1]} has been added.`,
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      })
-      setLoading(false)
+      try {
+        await writePath({ path: tags })
+        toast({
+          title: 'Created Path.',
+          description: `${tags[tags.length - 1]} has been added.`,
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        })
+      } catch(e) {
+      } finally {
+        setLoading(false)
+      }
+    } else if(/^(Arrow)?(Right|Up)$/.test(evt.key)) {
+      if(suggestions.length === 1) {
+        setElem(suggestions[0])
+      }
     } else if(evt.key === 'Enter' && tag !== '') {
       add(tag)
-    } else {
+    } else if(!evt.key) { // onChange, could easily be a separate function
       setElem(raw)
       setSearch(s => ({ path: s.path, string: raw }))
     }
@@ -75,13 +94,14 @@ export default () => {
   const remove = (idx) => {
     setLoading(true)
     setTags((ts) => {
-      const copy = [...ts]
-      copy.splice(idx, 1)
+      const copy = [...ts].slice(0, idx)
       setSearch({ path: copy, string: elem })
       return copy
     })
   }
-  const writePath = async (path) => {
+  const writePath = async ({
+    path, cid = null, filename = null,
+  }) => {
     if(path.length === 0) return
 
     if(!idx.ceramic.did) {
@@ -92,6 +112,7 @@ export default () => {
         duration: 5000,
         isClosable: true,
       })
+      throw new Error('Not Connected')
     } else {
       let root = await idx.get('mïmis', did)
       const docs = []
@@ -105,44 +126,78 @@ export default () => {
         }
       }
 
+      const found = docs.length
+
       // For the part of the path that doesn't exist, work back
       // from the leaf defining nodes.
       const nonexistent = (
-        path.slice(docs.length, path.length).reverse()
+        path.slice(found, path.length).reverse()
       )
-      const backPath = []
+      const backwards = []
       for(const elem of nonexistent) {
+        console.info("BKWRD", { backwards, elem })
         const doc = await TileDocument.create(
           idx.ceramic,
-          { [elem]: backPath[0] ?? null },
+          { [elem]: backwards[0] ?? null },
           {
             controllers: [idx.ceramic.did.id],
             family: 'Mïmis Node',
             schema: defs.schemas.Mïmis,
           }
         )
-        backPath.unshift(doc.id.toUrl())
+        backwards.unshift(doc)
       }
-      if(docs.length === 0) {
-        if(backPath.length > 0) {
-          idx.merge('mïmis', { [path[0]]: backPath[1] })
+      // append the completed walk to the forward path
+      // for a complete route
+      docs.push(...backwards)
+
+      if(found === 0) { // this is a root entry
+        if(docs.length > 2) {
+          await idx.merge('mïmis', {
+            [path[0]]: docs[1].id.toUrl()
+          })
         }
       } else {
-        const doc = docs[docs.length - 1]
-        const node = {
+        const doc = docs[found]
+        await doc.update({
           ...doc.content,
-          [path[docs.length]]: backPath[1] ?? null,
-        }
-        await doc.update(node)
+          [path[found]]: (
+            docs[found + 1]?.id.toUrl() ?? null
+          ),
+        })
+      }
+
+      if(cid) {
+        if(!filename) throw new Error('Filename not set.')
+        const doc = docs.slice(-1)
+        await doc.update({
+          ...doc.content,
+          [filename]: `ipfs://${cid.toString()}`
+        })
       }
     }
   }
-  const upload = (evt) => {
+  const upload = async (evt) => {
     const files = evt.target.files
     const name = evt.target.value
 
     if(files.length === 0) {
       throw new Error('No file is selected')
+    }
+
+    for(const file of files) {
+      const added = await ipfs.add(
+        file,
+        {
+          progress: (prog) => console.info(`received: ${prog}`)
+        }
+      )
+      const ext = name.split('.').slice(-1)
+      const filename = `${ext}`
+      // added.size
+      writePath({
+        path: tags, cid: added.cid, filename
+      })
     }
   }
 
@@ -158,14 +213,22 @@ export default () => {
 
   return (
     <>
-      <Button
-        position="fixed" top={20} right={10}
-        colorScheme="orange"
-        onClick={() => file.current.click()}
-      >
-        ➕
-      </Button>
-      <Input type="file" ref={file} style={{ display: 'none' }}/>
+      {idx.ceramic.did && (
+        <>
+          <Button
+            position="fixed" top={20} right={10}
+            colorScheme="orange"
+            onClick={() => file.current.click()}
+          >
+            ➕
+          </Button>
+          <Input
+            type="file" ref={file}
+            style={{ display: 'none' }}
+            onChange={upload}
+          />
+        </>
+      )}
       <Stack mr="10em">
         <InputGroup maxW="42rem" m="auto" mt={5}>
           <InputLeftAddon children="DID" title="Decentralized Identifier" />
@@ -191,9 +254,9 @@ export default () => {
           <Input
             maxW="20rem" borderWidth={3}
             autoFocus grow={1}
-            onKeyPress={process}
+            onKeyDown={dispatch}
             value={elem}
-            onChange={process}
+            onChange={dispatch}
           />
         </Wrap>
         {(() => {
@@ -217,8 +280,8 @@ export default () => {
                 <Th>Name</Th>
               </Tr></Thead>
               <Tbody>
-                {suggestions.map((sug, i) => (
-                  <Tr key={i}>
+                {suggestions.sort().map((sug, i) => (
+                  <Tr key={i} _hover={{ bg: '#FFF70022' }}>
                     <Td onClick={() => add(sug)} cursor="pointer">
                       {sug}
                     </Td>
