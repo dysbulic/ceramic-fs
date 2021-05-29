@@ -1,5 +1,4 @@
-import { useContext, useEffect, useState } from 'react'
-import Ceramic from '@ceramicnetwork/http-client'
+import { useCallback, useContext, useEffect, useState } from 'react'
 import { IDX } from '@ceramicstudio/idx'
 import defs from './definitionIDs.json'
 import { CeramicContext } from './CeramicContext'
@@ -20,14 +19,14 @@ export const useSuggestions = () => {
   }
   useEffect(setup, [ceramic])
 
-  const dereference = async () => {
+  const dereference = useCallback(async () => {
     if(idx) {
       const root = await idx.get('mïmis')
       console.info(root, path)
       setResult(path)
     }
-  }
-  useEffect(() => dereference(), [path, idx])
+  }, [path, idx])
+  useEffect(() => dereference(), [dereference])
 
   return [result, setPath]
 }

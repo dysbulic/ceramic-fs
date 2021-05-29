@@ -43,6 +43,7 @@ export default () => {
               position="fixed"
               right={5} top={5}
               onClick={func}
+              title={ceramic?.did.id}
             >
               {text}
             </Button>

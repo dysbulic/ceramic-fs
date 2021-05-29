@@ -1,9 +1,10 @@
 import {
   Input, Stack, Table, Tag, TagCloseButton, TagLabel,
-  Tbody, Td, Th, Thead, Tr, Wrap,
+  Tbody, Td, Text, Th, Thead, Tr, Wrap,
 } from '@chakra-ui/react'
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import { useSuggestions } from './useSuggestions'
+import { CeramicContext } from './CeramicContext'
 
 let tagKey = 0
 
@@ -14,6 +15,7 @@ const colors = [
 
 // eslint-disable-next-line import/no-anonymous-default-export
 export default () => {
+  const ceramic = useContext(CeramicContext)
   const [tags, setTags] = useState([])
   const [elem, setElem] = useState('')
   const [suggestions, setPath] = useSuggestions()
@@ -22,14 +24,11 @@ export default () => {
     const tag = raw.trim()
     let list = tags
     if(evt.key === 'Enter' && tag !== '') {
-      setTags(ts => {
-        return list = [...ts, tag]
-      })
+      setTags(ts => (list = [...ts, tag]))
       setElem('')
     } else {
       setElem(raw)
     }
-    console.info(list, raw)
     setPath([...list, raw])
   }
   const remove = (idx) => {
@@ -65,16 +64,37 @@ export default () => {
           onChange={process}
         />
       </Wrap>
-      <Table>
-        <Thead><Tr>
-          <Th>Name</Th>
-        </Tr></Thead>
-        <Tbody>
-          {suggestions.map((sug, i) => (
-            <Tr key={i}><Td>{sug}</Td></Tr>
-          ))}
-        </Tbody>
-      </Table>
+      {(() => {
+        if(!ceramic) {
+          return (
+            <Text textAlign="center">
+              Connect to Ceramic to browse files.
+            </Text>
+          )
+        }
+        if(
+          suggestions.length === 0
+          || (suggestions.length === 1 && suggestions[0] === '')
+        ) {
+          return (
+            <Text textAlign="center">
+              No path completions found…
+            </Text>
+          )
+        }
+        return (
+          <Table>
+            <Thead><Tr>
+              <Th>Name</Th>
+            </Tr></Thead>
+            <Tbody>
+              {suggestions.map((sug, i) => (
+                <Tr key={i}><Td>{sug}</Td></Tr>
+              ))}
+            </Tbody>
+          </Table>
+        )
+      })()}
     </Stack>
   )
 }
