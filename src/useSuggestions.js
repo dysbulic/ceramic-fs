@@ -1,32 +1,41 @@
 import { useCallback, useContext, useEffect, useState } from 'react'
-import { IDX } from '@ceramicstudio/idx'
-import defs from './definitionIDs.json'
-import { CeramicContext } from './CeramicContext'
+import { TileDocument } from '@ceramicnetwork/stream-tile'
+import { IDXContext } from './IDXContext'
 
-export const useSuggestions = () => {
-  const [path, setPath] = useState([])
-  const [idx, setIDX] = useState(null)
-  const ceramic = useContext(CeramicContext)
+export const useSuggestions = ({ did }) => {
+  const [search, setSearch] = useState({
+    path: [], string: ''
+  })
+  const idx = useContext(IDXContext)
   const [result, setResult] = useState([])
-
-  const setup = () => {
-    if(ceramic) {
-      const aliases = { mïmis: defs.definitions.mïmis }
-      setIDX(new IDX({ ceramic, aliases }))
-    } else {
-      setIDX(null)
-    }  
-  }
-  useEffect(setup, [ceramic])
 
   const dereference = useCallback(async () => {
     if(idx) {
-      const root = await idx.get('mïmis')
-      console.info(root, path)
-      setResult(path)
+      let root = await idx.get('mïmis', did)
+      const nodes = root ? [root] : []
+      for(const elem of search.path) {
+        const url = root?.[elem]
+        if(Boolean(url)) {
+          root = (await TileDocument.load(idx.ceramic, url)).content
+          root && nodes.push(root)
+        } else {
+          break
+        }
+      }
+
+      let suggestions = []
+      if(nodes.length - 1 === search.path.length) {
+        suggestions = Object.keys(nodes[nodes.length - 1])
+        if(search.string !== '') {
+          suggestions = suggestions.filter(
+            s => s.startsWith(search.string)
+          )
+        }
+      }
+      setResult(suggestions)
     }
-  }, [path, idx])
+  }, [search, idx, did])
   useEffect(() => dereference(), [dereference])
 
-  return [result, setPath]
+  return [result, setSearch]
 }

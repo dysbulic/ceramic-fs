@@ -4,37 +4,44 @@ import ThreeIdResolver from '@ceramicnetwork/3id-did-resolver'
 import Ceramic from '@ceramicnetwork/http-client'
 import { DID } from 'dids'
 import React, { useState } from 'react'
+import { IDX } from '@ceramicstudio/idx'
+import defs from './definitionIDs.json'
 import Listing from './Listing'
-import { CeramicContext } from './CeramicContext'
+import { IDXContext } from './IDXContext'
 
 // eslint-disable-next-line import/no-anonymous-default-export
 export default () => {
-  const [ceramic, setCeramic] = useState(null)
+  const ceramic = new Ceramic('http://localhost:7007')
+  const aliases = { mïmis: defs.definitions.mïmis }
+  const [idx, setIDX] = useState(new IDX({ ceramic, aliases }))
   const threeIdConnect = new ThreeIdConnect()
+  const [_, setRedraw] = useState(false)
+
   const connect = async () => {
-    const addresses = await window.ethereum.enable()
+    const addresses = await (
+      window.ethereum.request({ method: 'eth_requestAccounts' })
+    )
     const address = addresses[0]
     const authProvider = new EthereumAuthProvider(window.ethereum, address)
     await threeIdConnect.connect(authProvider)
-    const ceramic = new Ceramic('http://localhost:7007')
     const did = new DID({
       provider: threeIdConnect.getDidProvider(),
       resolver: ThreeIdResolver.getResolver(ceramic)
     })
     await did.authenticate()
     ceramic.setDID(did)
-    setCeramic(ceramic)
+    setRedraw(d => !d) // force redraw
   }
   const disconnect = () => {
-    setCeramic(null)
+    setIDX(null)
   }
 
   return (
-    <CeramicContext.Provider value={ceramic}>
+    <IDXContext.Provider value={idx}>
       <ChakraProvider>
         {(() => {
           const [text, func] = (
-            ceramic
+            idx.ceramic.did
             ? ( ['Disconnect', disconnect] )
             : ( ['Connect', connect] ) 
           )
@@ -43,7 +50,7 @@ export default () => {
               position="fixed"
               right={5} top={5}
               onClick={func}
-              title={ceramic?.did.id}
+              title={idx.ceramic.did?.id}
             >
               {text}
             </Button>
@@ -51,6 +58,6 @@ export default () => {
         })()}
         <Listing/>
       </ChakraProvider>
-    </CeramicContext.Provider>
+    </IDXContext.Provider>
   )
 }
