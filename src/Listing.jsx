@@ -1,8 +1,10 @@
 import {
-  Input, InputGroup, InputLeftAddon, Stack, Table, Tag, TagCloseButton, TagLabel,
+  Box,
+  Button,
+  Input, InputGroup, InputLeftAddon, Spinner, Stack, Table, Tag, TagCloseButton, TagLabel,
   Tbody, Td, Text, Th, Thead, Tr, useToast, Wrap,
 } from '@chakra-ui/react'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { TileDocument } from '@ceramicnetwork/stream-tile'
 import { useSuggestions } from './useSuggestions'
 import { IDXContext } from './IDXContext'
@@ -23,11 +25,17 @@ export default () => {
   const [did, setDID] = useState(
     'did:3:kjzl6cwe1jw147zr02h32lkdp666opzg0kp0sibzvumtn0z4k1wdxb6yb7ix4ie'
   )
+  const [loading, setLoading] = useState(true)
   const [suggestions, setSearch] = useSuggestions({ did })
+  const file = useRef(null)
   const toast = useToast()
+
   const process = async (evt) => {
     const raw = evt.target.value
     const tag = raw.trim()
+
+    setLoading(true)
+
     if(evt.ctrlKey && evt.shiftKey && evt.key === 'Enter') {
       await idx.set('mïmis', {})
       toast({
@@ -37,6 +45,7 @@ export default () => {
         duration: 5000,
         isClosable: true,
       })
+      setLoading(false)
     } else if(evt.ctrlKey && evt.key === 'Enter') {
       await writePath(tags)
       toast({
@@ -46,6 +55,7 @@ export default () => {
         duration: 5000,
         isClosable: true,
       })
+      setLoading(false)
     } else if(evt.key === 'Enter' && tag !== '') {
       add(tag)
     } else {
@@ -54,6 +64,7 @@ export default () => {
     }
   }
   const add = (term) => {
+    setLoading(true)
     setTags(ts => {
       const path = [...ts, term]
       setSearch({ path, string: '' })
@@ -62,6 +73,7 @@ export default () => {
     setElem('')
   }
   const remove = (idx) => {
+    setLoading(true)
     setTags((ts) => {
       const copy = [...ts]
       copy.splice(idx, 1)
@@ -125,6 +137,18 @@ export default () => {
       }
     }
   }
+  const upload = (evt) => {
+    const files = evt.target.files
+    const name = evt.target.value
+
+    if(files.length === 0) {
+      throw new Error('No file is selected')
+    }
+  }
+
+  useEffect(() => {
+    setLoading(false)
+  }, [suggestions])
 
   useEffect(() => {
     if(idx?.ceramic?.did?.id) {
@@ -133,61 +157,78 @@ export default () => {
   }, [idx?.ceramic?.did?.id])
 
   return (
-    <Stack mr="10em">
-      <InputGroup maxW="42rem" m="auto" mt={5}>
-        <InputLeftAddon children="DID" title="Decentralized Identifier" />
-        <Input
-          borderWidth={3} textAlign="center"
-          value={did} onChange={evt => setDID(evt.target.value)}
-        />
-      </InputGroup>
-      <Wrap justify="center" mt={5}>
-        {tags.map((tag, idx) => (
-          <Tag
-            grow={3}
-            key={++tagKey}
-            variant="solid"
-            colorScheme={colors[idx % colors.length]}
-            title={tag}
-            mr={1}
-          >
-            <TagLabel>{tag}</TagLabel>
-            <TagCloseButton onClick={() => remove(idx)}/>
-          </Tag>
-        ))}
-        <Input
-          maxW="20rem" borderWidth={3}
-          autoFocus grow={1}
-          onKeyPress={process}
-          value={elem}
-          onChange={process}
-        />
-      </Wrap>
-      {(() => {
-        if(suggestions.length === 0) {
+    <>
+      <Button
+        position="fixed" top={20} right={10}
+        colorScheme="orange"
+        onClick={() => file.current.click()}
+      >
+        ➕
+      </Button>
+      <Input type="file" ref={file} style={{ display: 'none' }}/>
+      <Stack mr="10em">
+        <InputGroup maxW="42rem" m="auto" mt={5}>
+          <InputLeftAddon children="DID" title="Decentralized Identifier" />
+          <Input
+            borderWidth={3} textAlign="center"
+            value={did} onChange={evt => setDID(evt.target.value)}
+          />
+        </InputGroup>
+        <Wrap justify="center" mt={5}>
+          {tags.map((tag, idx) => (
+            <Tag
+              grow={3}
+              key={++tagKey}
+              variant="solid"
+              colorScheme={colors[idx % colors.length]}
+              title={tag}
+              mr={1}
+            >
+              <TagLabel>{tag}</TagLabel>
+              <TagCloseButton onClick={() => remove(idx)}/>
+            </Tag>
+          ))}
+          <Input
+            maxW="20rem" borderWidth={3}
+            autoFocus grow={1}
+            onKeyPress={process}
+            value={elem}
+            onChange={process}
+          />
+        </Wrap>
+        {(() => {
+          if(loading) {
+            return (
+              <Box align="center">
+                <Spinner size="xl" colorScheme="blue" m="auto" mt={40}/>
+              </Box>
+            )
+          }
+          if(suggestions.length === 0) {
+            return (
+              <Text textAlign="center">
+                No path completions found…
+              </Text>
+            )
+          }
           return (
-            <Text textAlign="center">
-              No path completions found…
-            </Text>
+            <Table>
+              <Thead><Tr>
+                <Th>Name</Th>
+              </Tr></Thead>
+              <Tbody>
+                {suggestions.map((sug, i) => (
+                  <Tr key={i}>
+                    <Td onClick={() => add(sug)} cursor="pointer">
+                      {sug}
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
           )
-        }
-        return (
-          <Table>
-            <Thead><Tr>
-              <Th>Name</Th>
-            </Tr></Thead>
-            <Tbody>
-              {suggestions.map((sug, i) => (
-                <Tr key={i}>
-                  <Td onClick={() => add(sug)} cursor="pointer">
-                    {sug}
-                  </Td>
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        )
-      })()}
-    </Stack>
+        })()}
+      </Stack>
+    </>
   )
 }
