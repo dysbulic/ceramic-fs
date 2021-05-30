@@ -25,7 +25,9 @@ export default ({
       >
         <ModalOverlay/>
         <ModalContent>
-          <ModalHeader>Configure Your Endpoints</ModalHeader>
+          <ModalHeader textAlign="center">
+            Configure Your Endpoints
+          </ModalHeader>
           <ModalCloseButton/>
           <ModalBody pb={6}>
             <FormControl>

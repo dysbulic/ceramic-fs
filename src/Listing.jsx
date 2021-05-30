@@ -126,73 +126,99 @@ export default ({ ceramicURI, setCeramicURI }) => {
       })
       throw new Error('Not Connected')
     } else {
-      let root = await idx.get('mïmis', did)
-      const docs = []
-      for(const elem of path) {
-        const url = root?.[elem] ?? root?.content?.[elem]
+      const urls = []
+      const entry = await idx.get('mïmis', did)
+      let root = entry
+      const forward = []
+      const url = root?.[path[0]]
+      urls.push(url)
+      if(Boolean(url)) {
+        root = await TileDocument.load(idx.ceramic, url)
+      }
+      for(const elem of path.slice(1)) {
+        const url = root?.content?.[elem]
+        urls.push(url)
         if(Boolean(url)) {
+          forward.push(root)
           root = await TileDocument.load(idx.ceramic, url)
-          docs.push(root)
         } else {
           break
         }
       }
 
-      console.info('FWD', { path }, docs.map(d => [d.id.toUrl(), d.content]))
+      const isIDX = !entry?.[path[0]]
+      const found = isIDX ? 0 : forward.length + 1
 
-      const found = docs.length
+      console.info('FWD', { path, urls, found }, forward.map(d => [d.id.toUrl(), d.content]))
 
       // For the part of the path that doesn't exist, work back
       // from the leaf defining nodes.
       const nonexistent = (
-        path.slice(found + 1, path.length).reverse()
+        path.slice(Math.max(1, found), path.length).reverse()
       )
       console.info('NON', nonexistent)
-      const backwards = []
+      const backward = []
       for(const elem of nonexistent) {
-        console.info("BKWRD", { found, backwards, elem })
+        console.info("BKWRD", { found, backward, elem })
         const doc = await TileDocument.create(
           idx.ceramic,
-          { [elem]: backwards[0]?.id.toUrl() ?? null },
+          { [elem]: backward[0]?.id.toUrl() ?? null },
           {
             controllers: [idx.ceramic.did.id],
             family: 'Mïmis Context Node',
             schema: defs.schemas.Mïmis,
           }
         )
-        backwards.unshift(doc)
+        backward.unshift(doc)
       }
-      // append the completed walk to the forward path
-      // for a complete route
-      docs.push(...backwards)
 
-      console.info(
-        "DCKS", docs.map(d => [d.id.toUrl(), d.content]),
-        { found, path, pl: path.length, dl: docs.length }
-      )
+      console.table({
+        name: "DCKS",
+        f: forward.map(d => d.content),
+        b: backward.map(d => d.content),
+        found, path, pl: path.length,
+        fl: forward.length,
+      })
 
-      if(found === 0) { // this is a root entry
-        // this will overwrite entries, I'm pretty sure
+      if(isIDX) { // this is a root entry
+        if(forward.length > 0) {
+          throw new Error("¿No Root, but Forward Walked?")
+        }
         console.info('ROOT', {
-          [path[0]]: docs[1]?.id.toUrl() ?? null
+          [path[0]]: backward[0]?.id.toUrl() ?? null
         })
         await idx.merge('mïmis', {
-          [path[0]]: docs[1]?.id.toUrl() ?? null
+          [path[0]]: backward[0]?.id.toUrl() ?? null
         })
-      } else if(found + 1 < path.length) {
-        const doc = docs[found + 1]
-        console.info('CHAIN', {
-          ...(doc?.content ?? []),
-          [path[found + 1]]: (
-            docs[found + 2]?.id.toUrl() ?? null
-          ),
+      } else if(found < path.length) {
+        console.info('HERE')
+        const [parent] = forward.slice(-1)
+        const child = backward[0]
+        console.info('PF', path[found - 1])
+        const content = await TileDocument.load(
+          idx.ceramic, parent.content[path[found - 1]]
+        )
+        console.table({
+          pf: path[found],
+          pf1: path[found + 1],
+          name: 'CHAIN',
+          pid: parent.id.toUrl(),
+          pcon: parent.content,
+          cid: child.id.toUrl(),
+          ccon: child.content,
+          content: content.content,
+          exe: {
+            ...content.content,
+            ...child.content,
+          },
         })
-        await doc.update({
-          ...doc.content,
-          [path[found + 1]]: (
-            docs[found + 2]?.id.toUrl() ?? null
-          ),
+        await content.update({
+          ...content.content,
+          ...child.content,
         })
+        console.info('NEW', content.content)
+      } else {
+        console.info('No Changes')
       }
 
       if(cid) {
@@ -206,18 +232,24 @@ export default ({ ceramicURI, setCeramicURI }) => {
             schema: defs.schemas.Mïmis,
           }
         )
-        const [parent] = docs.slice(-1)
-        console.info("DOC", parent, {
-          ...parent.content,
-          [path.slice(-1)[0]]: leaf.id.toUrl(),
+        let [parent] = backward.slice(-1)
+        parent = parent ?? forward.slice(-1)[0]
+        console.table({
+          name: "DOC",
+          parent,
+          exe: {
+            ...parent.content,
+            [path.slice(-1)[0]]: leaf.id.toUrl(),
+          }
         })
         await parent.update({
           ...parent.content,
           [path.slice(-1)[0]]: leaf.id.toUrl(),
         })
-        console.info(
-          { p: parent.id.toUrl(), c: parent.commitId.toUrl() }
-        )
+        console.table({
+          p: parent.id.toUrl(),
+          c: parent.commitId.toUrl(),
+        })
       }
     }
   }

@@ -21,6 +21,7 @@ export default () => {
     () => new IDX({ ceramic, aliases }),
     [aliases, ceramic]
   )
+  const [addr, setAddr] = useState(null)
   const threeIdConnect = new ThreeIdConnect()
   const setRedraw = useState(false)[1]
 
@@ -29,6 +30,7 @@ export default () => {
       window.ethereum.request({ method: 'eth_requestAccounts' })
     )
     const address = addresses[0]
+    setAddr(address)
     const authProvider = (
       new EthereumAuthProvider(window.ethereum, address)
     )
@@ -60,6 +62,7 @@ export default () => {
               position="fixed"
               right={5} top={5}
               {...{ onClick, colorScheme }}
+              title={addr}
             >
               {text}
             </Button>
