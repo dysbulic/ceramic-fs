@@ -1,19 +1,20 @@
 {
   "files": {
-    "main.js": "/ceramic-fs/static/js/main.f76e7c7b.chunk.js",
-    "main.js.map": "/ceramic-fs/static/js/main.f76e7c7b.chunk.js.map",
-    "runtime-main.js": "/ceramic-fs/static/js/runtime-main.fdc58cc4.js",
-    "runtime-main.js.map": "/ceramic-fs/static/js/runtime-main.fdc58cc4.js.map",
-    "static/js/2.72bc4931.chunk.js": "/ceramic-fs/static/js/2.72bc4931.chunk.js",
-    "static/js/2.72bc4931.chunk.js.map": "/ceramic-fs/static/js/2.72bc4931.chunk.js.map",
-    "static/js/3.d58af5e2.chunk.js": "/ceramic-fs/static/js/3.d58af5e2.chunk.js",
-    "static/js/3.d58af5e2.chunk.js.map": "/ceramic-fs/static/js/3.d58af5e2.chunk.js.map",
+    "main.js": "/ceramic-fs/static/js/main.b79f6e62.chunk.js",
+    "main.js.map": "/ceramic-fs/static/js/main.b79f6e62.chunk.js.map",
+    "runtime-main.js": "/ceramic-fs/static/js/runtime-main.2bec9a32.js",
+    "runtime-main.js.map": "/ceramic-fs/static/js/runtime-main.2bec9a32.js.map",
+    "static/js/2.a8841f7f.chunk.js": "/ceramic-fs/static/js/2.a8841f7f.chunk.js",
+    "static/js/2.a8841f7f.chunk.js.map": "/ceramic-fs/static/js/2.a8841f7f.chunk.js.map",
+    "static/js/3.d2f0ff24.chunk.js": "/ceramic-fs/static/js/3.d2f0ff24.chunk.js",
+    "static/js/3.d2f0ff24.chunk.js.map": "/ceramic-fs/static/js/3.d2f0ff24.chunk.js.map",
     "index.html": "/ceramic-fs/index.html",
-    "static/js/2.72bc4931.chunk.js.LICENSE.txt": "/ceramic-fs/static/js/2.72bc4931.chunk.js.LICENSE.txt"
+    "static/js/2.a8841f7f.chunk.js.LICENSE.txt": "/ceramic-fs/static/js/2.a8841f7f.chunk.js.LICENSE.txt",
+    "static/media/octocat.svg": "/ceramic-fs/static/media/octocat.6986f28e.svg"
   },
   "entrypoints": [
-    "static/js/runtime-main.fdc58cc4.js",
-    "static/js/2.72bc4931.chunk.js",
-    "static/js/main.f76e7c7b.chunk.js"
+    "static/js/runtime-main.2bec9a32.js",
+    "static/js/2.a8841f7f.chunk.js",
+    "static/js/main.b79f6e62.chunk.js"
   ]
 }
