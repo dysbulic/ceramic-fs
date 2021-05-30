@@ -3,7 +3,7 @@ import {
   Button,
   Image,
   Input, InputGroup, InputLeftAddon, Link, Spinner, Stack, Table, Tag, TagCloseButton, TagLabel,
-  Tbody, Td, Text, Th, Thead, Tr, useToast, Wrap,
+  Tbody, Td, Text, Th, Thead, Tr, useDisclosure, useToast, Wrap,
 } from '@chakra-ui/react'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { TileDocument } from '@ceramicnetwork/stream-tile'
@@ -12,6 +12,7 @@ import { useSuggestions } from './useSuggestions'
 import { IDXContext } from './IDXContext'
 import defs from './definitionIDs.json'
 import octocat from './octocat.svg'
+import Settings from './Settings'
 
 let tagKey = 0
 
@@ -21,7 +22,7 @@ const colors = [
 ]
 
 // eslint-disable-next-line import/no-anonymous-default-export
-export default () => {
+export default ({ ceramicURI, setCeramicURI }) => {
   const idx = useContext(IDXContext)
   const [tags, setTags] = useState([])
   const [elem, setElem] = useState('')
@@ -31,11 +32,13 @@ export default () => {
   const [loading, setLoading] = useState(true)
   const [suggestions, setSearch] = useSuggestions({ did })
   const file = useRef(null)
+  const entry = useRef(null)
   const [ipfsURI, setIPFSURI] = useState(
     process.env.REACT_APP_IPFS_URI ?? '/ip4/127.0.0.1/tcp/5001'
   )
   const ipfs = ipfsHttpClient(ipfsURI)
   const toast = useToast()
+  const { isOpen, onOpen, onClose } = useDisclosure()
 
   const dispatch = async (evt) => {
     const raw = evt.target.value
@@ -251,6 +254,21 @@ export default () => {
           />
         </>
       )}
+      <Button
+        position="fixed" top="28vh" right="3vw"
+        colorScheme="teal" fontSize={42} pt={1}
+        onClick={onOpen}
+      >
+        ⚙
+      </Button>
+      <Settings
+        {...{
+          isOpen, onClose,
+          ipfsURI, setIPFSURI,
+          ceramicURI, setCeramicURI,
+        }}
+        finalFocusRef={entry}
+      />
       <Link href="//github.com/dysbulic/ceramic-fs/">
         <Image
           src={octocat} position="fixed"
@@ -283,7 +301,7 @@ export default () => {
             maxW="20rem" borderWidth={3}
             autoFocus grow={1}
             onKeyDown={dispatch}
-            value={elem}
+            value={elem} ref={entry}
             onChange={dispatch}
           />
         </Wrap>

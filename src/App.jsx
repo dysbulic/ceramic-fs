@@ -11,11 +11,11 @@ import { IDXContext } from './IDXContext'
 
 // eslint-disable-next-line import/no-anonymous-default-export
 export default () => {
-  const [ceramicURL, setCeramicURL] = useState(
+  const [ceramicURI, setCeramicURI] = useState(
     // process.env.REACT_APP_CERAMIC_URL ?? 'http://localhost:7007'
-    process.env.REACT_APP_CERAMIC_URL ?? 'https://ceramic-clay.3boxlabs.com'
+    process.env.REACT_APP_CERAMIC_URI ?? 'https://ceramic-clay.3boxlabs.com'
   )
-  const ceramic = useMemo(() => new Ceramic(ceramicURL), [ceramicURL])
+  const ceramic = useMemo(() => new Ceramic(ceramicURI), [ceramicURI])
   const aliases = useMemo(() => ({ mïmis: defs.definitions.mïmis }), [])
   const idx = useMemo(
     () => new IDX({ ceramic, aliases }),
@@ -65,7 +65,7 @@ export default () => {
             </Button>
           )
         })()}
-        <Listing/>
+        <Listing {...{ ceramicURI, setCeramicURI }}/>
       </ChakraProvider>
     </IDXContext.Provider>
   )
