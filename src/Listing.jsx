@@ -1,7 +1,8 @@
 import {
   Box,
   Button,
-  Input, InputGroup, InputLeftAddon, Spinner, Stack, Table, Tag, TagCloseButton, TagLabel,
+  Image,
+  Input, InputGroup, InputLeftAddon, Link, Spinner, Stack, Table, Tag, TagCloseButton, TagLabel,
   Tbody, Td, Text, Th, Thead, Tr, useToast, Wrap,
 } from '@chakra-ui/react'
 import { useContext, useEffect, useRef, useState } from 'react'
@@ -10,6 +11,7 @@ import { create as ipfsHttpClient } from 'ipfs-http-client'
 import { useSuggestions } from './useSuggestions'
 import { IDXContext } from './IDXContext'
 import defs from './definitionIDs.json'
+import octocat from './octocat.svg'
 
 let tagKey = 0
 
@@ -72,8 +74,13 @@ export default () => {
         setLoading(false)
       }
     } else if(/^(Arrow)?(Right|Up)$/.test(evt.key)) {
-      if(suggestions.length === 1) {
-        setElem(suggestions[0])
+      if(!loading && suggestions.length === 1) {
+        if(elem === suggestions[0]) {
+          add(tag)
+        } else {
+          setElem(suggestions[0])
+          setLoading(false)
+        }
       }
     } else if(evt.key === 'Enter' && tag !== '') {
       add(tag)
@@ -133,12 +140,13 @@ export default () => {
       const nonexistent = (
         path.slice(found, path.length).reverse()
       )
+      console.info('NON', nonexistent)
       const backwards = []
       for(const elem of nonexistent) {
-        console.info("BKWRD", { backwards, elem })
+        console.info("BKWRD", { found, backwards, elem })
         const doc = await TileDocument.create(
           idx.ceramic,
-          { [elem]: backwards[0] ?? null },
+          { [elem]: backwards[0]?.id.toUrl() ?? null },
           {
             controllers: [idx.ceramic.did.id],
             family: 'Mïmis Node',
@@ -151,25 +159,39 @@ export default () => {
       // for a complete route
       docs.push(...backwards)
 
+      console.info("DCKS", docs, docs.map(d => d.content))
+
       if(found === 0) { // this is a root entry
-        if(docs.length > 2) {
-          await idx.merge('mïmis', {
-            [path[0]]: docs[1].id.toUrl()
-          })
-        }
-      } else {
-        const doc = docs[found]
+        // this will overwrite entries, I'm pretty sure
+        console.info('ROOT', {
+          [path[0]]: docs[1]?.id.toUrl() ?? null
+        })
+        await idx.merge('mïmis', {
+          [path[0]]: docs[1]?.id.toUrl() ?? null
+        })
+      } else if(found   < path.length) {
+        const doc = docs[found + 1]
+        console.info('CHAIN', {
+          ...(doc?.content ?? []),
+          [path[found + 1]]: (
+            docs[found + 2]?.id.toUrl() ?? null
+          ),
+        })
         await doc.update({
           ...doc.content,
-          [path[found]]: (
-            docs[found + 1]?.id.toUrl() ?? null
+          [path[found + 1]]: (
+            docs[found + 2]?.id.toUrl() ?? null
           ),
         })
       }
 
       if(cid) {
         if(!filename) throw new Error('Filename not set.')
-        const doc = docs.slice(-1)
+        const [doc] = docs.slice(-1)
+        console.info("DOC", doc, {
+          ...doc.content,
+          [filename]: `ipfs://${cid.toString()}`
+        })
         await doc.update({
           ...doc.content,
           [filename]: `ipfs://${cid.toString()}`
@@ -216,7 +238,7 @@ export default () => {
       {idx.ceramic.did && (
         <>
           <Button
-            position="fixed" top={20} right={10}
+            position="fixed" top="17vh" right="3vw"
             colorScheme="orange"
             onClick={() => file.current.click()}
           >
@@ -229,6 +251,12 @@ export default () => {
           />
         </>
       )}
+      <Link href="//github.com/dysbulic/ceramic-fs/">
+        <Image
+          src={octocat} position="fixed"
+          boxSize="5vw" bottom={0} right={6}
+        />
+      </Link>
       <Stack mr="10em">
         <InputGroup maxW="42rem" m="auto" mt={5}>
           <InputLeftAddon children="DID" title="Decentralized Identifier" />
