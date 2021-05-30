@@ -1,11 +1,13 @@
 import {
-  Box,
-  Button,
-  Image,
-  Input, InputGroup, InputLeftAddon, Link, Spinner, Stack, Table, Tag, TagCloseButton, TagLabel,
-  Tbody, Td, Text, Th, Thead, Tr, useDisclosure, useToast, Wrap,
+  Box, Button, Image, Input, InputGroup,
+  InputLeftAddon, Link, Spinner, Table,
+  Tag, TagCloseButton, TagLabel, Tbody, Td,
+  Text, Th, Thead, Tr, useDisclosure,
+  useToast, Wrap,
 } from '@chakra-ui/react'
-import { useContext, useEffect, useRef, useState } from 'react'
+import {
+  useContext, useEffect, useRef, useState
+} from 'react'
 import { TileDocument } from '@ceramicnetwork/stream-tile'
 import { create as ipfsHttpClient } from 'ipfs-http-client'
 import { useSuggestions } from './useSuggestions'
@@ -136,12 +138,14 @@ export default ({ ceramicURI, setCeramicURI }) => {
         }
       }
 
+      console.info('FWD', { path }, docs.map(d => [d.id.toUrl(), d.content]))
+
       const found = docs.length
 
       // For the part of the path that doesn't exist, work back
       // from the leaf defining nodes.
       const nonexistent = (
-        path.slice(found, path.length).reverse()
+        path.slice(found + 1, path.length).reverse()
       )
       console.info('NON', nonexistent)
       const backwards = []
@@ -152,7 +156,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
           { [elem]: backwards[0]?.id.toUrl() ?? null },
           {
             controllers: [idx.ceramic.did.id],
-            family: 'Mïmis Node',
+            family: 'Mïmis Context Node',
             schema: defs.schemas.Mïmis,
           }
         )
@@ -162,7 +166,10 @@ export default ({ ceramicURI, setCeramicURI }) => {
       // for a complete route
       docs.push(...backwards)
 
-      console.info("DCKS", docs, docs.map(d => d.content))
+      console.info(
+        "DCKS", docs.map(d => [d.id.toUrl(), d.content]),
+        { found, path, pl: path.length, dl: docs.length }
+      )
 
       if(found === 0) { // this is a root entry
         // this will overwrite entries, I'm pretty sure
@@ -172,7 +179,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
         await idx.merge('mïmis', {
           [path[0]]: docs[1]?.id.toUrl() ?? null
         })
-      } else if(found   < path.length) {
+      } else if(found + 1 < path.length) {
         const doc = docs[found + 1]
         console.info('CHAIN', {
           ...(doc?.content ?? []),
@@ -190,15 +197,27 @@ export default ({ ceramicURI, setCeramicURI }) => {
 
       if(cid) {
         if(!filename) throw new Error('Filename not set.')
-        const [doc] = docs.slice(-1)
-        console.info("DOC", doc, {
-          ...doc.content,
-          [filename]: `ipfs://${cid.toString()}`
+        const leaf = await TileDocument.create(
+          idx.ceramic,
+          { [filename]: `ipfs://${cid.toString()}` },
+          {
+            controllers: [idx.ceramic.did.id],
+            family: 'Mïmis Content Node',
+            schema: defs.schemas.Mïmis,
+          }
+        )
+        const [parent] = docs.slice(-1)
+        console.info("DOC", parent, {
+          ...parent.content,
+          [path.slice(-1)[0]]: leaf.id.toUrl(),
         })
-        await doc.update({
-          ...doc.content,
-          [filename]: `ipfs://${cid.toString()}`
+        await parent.update({
+          ...parent.content,
+          [path.slice(-1)[0]]: leaf.id.toUrl(),
         })
+        console.info(
+          { p: parent.id.toUrl(), c: parent.commitId.toUrl() }
+        )
       }
     }
   }
@@ -241,7 +260,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
       {idx.ceramic.did && (
         <>
           <Button
-            position="fixed" top="17vh" right="3vw"
+            position="fixed" top="25vh" right="3vw"
             colorScheme="orange"
             onClick={() => file.current.click()}
           >
@@ -255,7 +274,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
         </>
       )}
       <Button
-        position="fixed" top="28vh" right="3vw"
+        position="fixed" top="50vh" right="3vw"
         colorScheme="teal" fontSize={42} pt={1}
         onClick={onOpen}
       >
@@ -275,7 +294,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
           boxSize="5vw" bottom={0} right={6}
         />
       </Link>
-      <Stack mr="10em">
+      <Box mr="10em">
         <InputGroup maxW="42rem" m="auto" mt={5}>
           <InputLeftAddon children="DID" title="Decentralized Identifier" />
           <Input
@@ -315,9 +334,15 @@ export default ({ ceramicURI, setCeramicURI }) => {
           }
           if(suggestions.length === 0) {
             return (
-              <Text textAlign="center">
-                No path completions found…
-              </Text>
+              <Box mt="30vh">
+                <Text
+                  textAlign="center"
+                  fontFamily="'Odibee Sans'"
+                  fontSize={65}
+                >
+                  No path completions found…
+                </Text>
+              </Box>
             )
           }
           return (
@@ -337,7 +362,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
             </Table>
           )
         })()}
-      </Stack>
+      </Box>
     </>
   )
 }

@@ -1,4 +1,9 @@
-import { Button, FormControl, FormLabel, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, useDisclosure } from '@chakra-ui/react'
+import {
+  Button, FormControl, FormLabel, Input,
+  Modal, ModalBody, ModalCloseButton,
+  ModalContent, ModalFooter, ModalHeader,
+  ModalOverlay,
+} from '@chakra-ui/react'
 import React, { useState } from 'react'
 
 // eslint-disable-next-line import/no-anonymous-default-export
