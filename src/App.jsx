@@ -3,7 +3,7 @@ import { Button, ChakraProvider } from '@chakra-ui/react'
 import ThreeIdResolver from '@ceramicnetwork/3id-did-resolver'
 import Ceramic from '@ceramicnetwork/http-client'
 import { DID } from 'dids'
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { IDX } from '@ceramicstudio/idx'
 import defs from './definitionIDs.json'
 import Listing from './Listing'
@@ -22,6 +22,7 @@ export default () => {
     [aliases, ceramic]
   )
   const [addr, setAddr] = useState(null)
+  const [loggingIn, setLoggingIn] = useState(false)
   const threeIdConnect = new ThreeIdConnect()
   const setRedraw = useState(false)[1]
 
@@ -48,6 +49,11 @@ export default () => {
     setRedraw(d => !d) // force redraw
   }
 
+  useEffect(
+    () => { setLoggingIn(false) },
+    [idx.ceramic.did],
+  )
+
   return (
     <IDXContext.Provider value={idx}>
       <ChakraProvider>
@@ -61,8 +67,13 @@ export default () => {
             <Button
               position="fixed"
               right={5} top={5}
-              {...{ onClick, colorScheme }}
+              {...{ colorScheme }}
+              onClick={(evt) => {
+                setLoggingIn(true)
+                onClick(evt)
+              }}
               title={addr}
+              isDisabled={loggingIn}
             >
               {text}
             </Button>

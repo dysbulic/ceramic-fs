@@ -15,9 +15,15 @@ export const useSuggestions = ({ did }) => {
       const nodes = root ? [root] : []
       for(const elem of search.path) {
         const url = root?.[elem]
-        if(Boolean(url)) {
-          root = (await TileDocument.load(idx.ceramic, url)).content
+
+        if(url?.startsWith('ceramic://')) {
+          root = (await
+            TileDocument.load(idx.ceramic, url)
+          ).content
           root && nodes.push(root)
+        } else if(url?.startsWith('ipfs://')) {
+          setResult(url) // a leaf with content
+          return
         } else {
           break
         }
