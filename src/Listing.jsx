@@ -2,7 +2,7 @@ import {
   Box, Button, Image, Input, InputGroup,
   InputLeftAddon, Link, Spinner, Table,
   Tag, TagCloseButton, TagLabel, Tbody, Td,
-  Text, Th, Thead, Tr, useDisclosure,
+  Text, Th, Thead, Tooltip, Tr, useDisclosure,
   useToast, Wrap,
 } from '@chakra-ui/react'
 import {
@@ -246,13 +246,15 @@ export default ({ ceramicURI, setCeramicURI }) => {
     <>
       {idx.ceramic.did && (
         <>
-          <Button
-            position="fixed" top="25vh" right="3vw"
-            colorScheme="orange"
-            onClick={() => file.current.click()}
-          >
-            ➕
-          </Button>
+          <Tooltip hasArrow label="Add A File">
+            <Button
+              position="fixed" top="25vh" right="3vw"
+              colorScheme="orange"
+              onClick={() => file.current.click()}
+            >
+              ➕
+            </Button>
+          </Tooltip>
           <Input
             type="file" ref={file}
             style={{ display: 'none' }}
@@ -260,13 +262,15 @@ export default ({ ceramicURI, setCeramicURI }) => {
           />
         </>
       )}
-      <Button
-        position="fixed" top="50vh" right="3vw"
-        colorScheme="teal" fontSize={42} pt={1}
-        onClick={onOpen}
-      >
-        ⚙
-      </Button>
+      <Tooltip hasArrow label="Settings">
+        <Button
+          position="fixed" top="50vh" right="3vw"
+          colorScheme="teal" fontSize={42} pt={1}
+          onClick={onOpen}
+        >
+          ⚙
+        </Button>
+      </Tooltip>
       <Settings
         {...{
           isOpen, onClose,
@@ -309,7 +313,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
             onKeyDown={dispatch}
             value={elem} ref={entry}
             onChange={dispatch}
-            placeholder="^⏎ to create a path; →→ for autocomplete"
+            placeholder="^⏎ to write a path; →→ for autocomplete"
           />
         </Wrap>
         {(() => {
