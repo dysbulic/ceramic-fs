@@ -2,12 +2,19 @@ import { useCallback, useContext, useEffect, useState } from 'react'
 import { TileDocument } from '@ceramicnetwork/stream-tile'
 import { IDXContext } from './IDXContext'
 
-export const useSuggestions = ({ did }) => {
+export const useSuggestions = ({ did, setLoading }) => {
   const [search, setSearch] = useState({
     path: [], string: ''
   })
   const idx = useContext(IDXContext)
   const [result, setResult] = useState([])
+  const resolve = useCallback(
+    (result) => {
+      setLoading(false)
+      setResult(result)
+    },
+    [setLoading],
+  )
 
   const dereference = useCallback(async () => {
     if(idx) {
@@ -22,7 +29,7 @@ export const useSuggestions = ({ did }) => {
           ).content
           root && nodes.push(root)
         } else if(url?.startsWith('ipfs://')) {
-          setResult(url) // a leaf with content
+          resolve(url) // a leaf with content
           return
         } else {
           break
@@ -38,9 +45,9 @@ export const useSuggestions = ({ did }) => {
           )
         }
       }
-      setResult(suggestions)
+      resolve(suggestions)
     }
-  }, [search, idx, did])
+  }, [idx, did, search.path, search.string, resolve])
   useEffect(() => dereference(), [dereference])
 
   return [result, setSearch]

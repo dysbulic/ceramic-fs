@@ -32,7 +32,10 @@ export default ({ ceramicURI, setCeramicURI }) => {
     'did:3:bafyreifdypkct7falt5aqkeahfl552ktoxlyh7lmrf6pttlwnfseufh4fe'
   )
   const [loading, setLoading] = useState(true)
-  const [suggestions, setSearch] = useSuggestions({ did })
+  const [selected, setSelected] = useState(null)
+  const [suggestions, setSearch] = (
+    useSuggestions({ did, setLoading })
+  )
   const file = useRef(null)
   const entry = useRef(null)
   const [ipfsURI, setIPFSURI] = useState(
@@ -45,8 +48,6 @@ export default ({ ceramicURI, setCeramicURI }) => {
   const dispatch = async (evt) => {
     const raw = evt.target.value
     const tag = raw.trim()
-
-    setLoading(true)
 
     if(evt.ctrlKey && evt.shiftKey && evt.key === 'Enter') {
       if(window.confirm('Clear All Data‽')) {
@@ -63,7 +64,6 @@ export default ({ ceramicURI, setCeramicURI }) => {
           })
         }
       }
-      setLoading(false)
     } else if(evt.ctrlKey && evt.key === 'Enter') {
       try {
         await writePath({ path: tags })
@@ -76,25 +76,48 @@ export default ({ ceramicURI, setCeramicURI }) => {
         })
       } catch(e) {
       } finally {
-        setLoading(false)
       }
-    } else if(/^(Arrow)?(Right|Up)$/.test(evt.key)) {
+    } else if(/^(Arrow)?Up$/.test(evt.key)) {
+      setSelected((s) => {
+        if(s === null || s > suggestions.length || s < 0) {
+          return suggestions.length - 1
+        }
+        return s - 1
+      })
+    } else if(/^(Arrow)?Down$/.test(evt.key)) {
+      setSelected((s) => {
+        if(s === null || s > suggestions.length || s < 0) {
+          return 0
+        }
+        return s + 1
+      })
+    } else if(/^(Arrow)?Right$/.test(evt.key)) {
       if(!loading && suggestions.length === 1) {
         if(elem === suggestions[0]) {
           add(tag)
         } else {
-          setElem(suggestions[0])
-          setLoading(false)
+          text(suggestions[0])
+        }
+      } else {
+        if(selected >= 0 && selected < suggestions.length) {
+          text(suggestions[selected])
         }
       }
     } else if(evt.key === 'Enter' && tag !== '') {
       add(tag)
-    } else if(evt.key === 'Backspace' && raw === '') {
+    } else if(
+      (evt.key === 'Backspace' && raw === '')
+      || /^(Arrow)?Left$/.test(evt.key)
+    ) {
       remove(tags.length - 1)
     } else if(!evt.key) { // onChange, could easily be a separate function
-      setElem(raw)
-      setSearch(s => ({ path: s.path, string: raw }))
+      text(raw)
     }
+  }
+  const text = (string) => {
+    setLoading(true)
+    setElem(string)
+    setSearch(s => ({ path: s.path, string }))
   }
   const add = (term) => {
     setLoading(true)
@@ -232,6 +255,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
     }
   }
 
+  // used to catch the effect of the useSuggestions hook
   useEffect(() => {
     setLoading(false)
   }, [suggestions])
@@ -248,7 +272,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
         <>
           <Tooltip hasArrow label="Add A File">
             <Button
-              position="fixed" top="25vh" right="3vw"
+              position="fixed" top="25vh" right={10}
               colorScheme="orange"
               onClick={() => file.current.click()}
             >
@@ -264,7 +288,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
       )}
       <Tooltip hasArrow label="Settings">
         <Button
-          position="fixed" top="50vh" right="3vw"
+          position="fixed" top="50vh" right={10}
           colorScheme="teal" fontSize={42} pt={1}
           onClick={onOpen}
         >
@@ -280,10 +304,12 @@ export default ({ ceramicURI, setCeramicURI }) => {
         finalFocusRef={entry}
       />
       <Link href="//github.com/dysbulic/ceramic-fs/">
-        <Image
-          src={octocat} position="fixed"
-          boxSize="5vw" bottom={0} right={6}
-        />
+        <Tooltip hasArrow label="GitHub">
+          <Image
+            src={octocat} position="fixed"
+            boxSize="5vw" bottom={0} right={6}
+          />
+        </Tooltip>
       </Link>
       <Box mr="10em">
         <InputGroup maxW="42rem" m="auto" mt={5}>
@@ -296,12 +322,12 @@ export default ({ ceramicURI, setCeramicURI }) => {
         <Wrap justify="center" mt={5}>
           {tags.map((tag, idx) => (
             <Tag
-              grow={3}
+              grow={3} mr={1}
               key={++tagKey}
               variant="solid"
               colorScheme={colors[idx % colors.length]}
               title={tag}
-              mr={1}
+              onClick={() => remove(idx + 1)}
             >
               <TagLabel>{tag}</TagLabel>
               <TagCloseButton onClick={() => remove(idx)}/>
@@ -333,7 +359,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
             if(match) {
               url = `http://ipfs.io/ipfs/${match[1]}`
             }
-            return <Image src={url} mt={5} maxH="90vh"/>
+            return <Image src={url} m="auto" mt={5} maxH="90vh"/>
           }
           if(suggestions.length === 0) {
             return (
@@ -354,8 +380,17 @@ export default ({ ceramicURI, setCeramicURI }) => {
                 <Th>Name</Th>
               </Tr></Thead>
               <Tbody>
-                {suggestions.sort().map((sug, i) => (
-                  <Tr key={i} _hover={{ bg: '#FFF70022' }}>
+                {suggestions
+                .sort((a, b) => {
+                  if(/^\d+$/.test(a) && /^\d+$/.test(b)) {
+                    return parseInt(a) - parseInt(b)
+                  }
+                  return a.localeCompare(b)
+                }).map((sug, i) => (
+                  <Tr
+                    key={i} _hover={{ bg: '#FFF70022' }}
+                    bg={i === selected ? '#FF000022' : 'transparent'}
+                  >
                     <Td onClick={() => add(sug)} cursor="pointer">
                       {sug}
                     </Td>
