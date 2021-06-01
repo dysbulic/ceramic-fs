@@ -99,15 +99,22 @@ export default ({ ceramicURI, setCeramicURI }) => {
           text(suggestions[0])
         }
       } else {
-        if(selected >= 0 && selected < suggestions.length) {
+        if(
+          selected !== null
+          && selected >= 0
+          && selected < suggestions.length
+        ) {
           text(suggestions[selected])
         }
       }
     } else if(evt.key === 'Enter' && tag !== '') {
       add(tag)
     } else if(
-      (evt.key === 'Backspace' && raw === '')
-      || /^(Arrow)?Left$/.test(evt.key)
+      (
+        evt.key === 'Backspace'
+        || /^(Arrow)?Left$/.test(evt.key)
+      )
+      && raw === ''
     ) {
       remove(tags.length - 1)
     } else if(!evt.key) { // onChange, could easily be a separate function
@@ -359,7 +366,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
             if(match) {
               url = `http://ipfs.io/ipfs/${match[1]}`
             }
-            return <Image src={url} m="auto" mt={5} maxH="90vh"/>
+            return <Image src={url} m="auto" mt={5} maxH="80vh"/>
           }
           if(suggestions.length === 0) {
             return (
@@ -389,7 +396,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
                 }).map((sug, i) => (
                   <Tr
                     key={i} _hover={{ bg: '#FFF70022' }}
-                    bg={i === selected ? '#FF000022' : 'transparent'}
+                    bg={i === selected ? '#0000FF22' : 'transparent'}
                   >
                     <Td onClick={() => add(sug)} cursor="pointer">
                       {sug}
