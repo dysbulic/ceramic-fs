@@ -29,8 +29,10 @@ export default ({ ceramicURI, setCeramicURI }) => {
   const idx = useContext(IDXContext)
   const [tags, setTags] = useState([])
   const [elem, setElem] = useState('')
+  const params = new URLSearchParams(window.location.search)
   const [did, setDID] = useState(
-    'did:3:bafyreifdypkct7falt5aqkeahfl552ktoxlyh7lmrf6pttlwnfseufh4fe'
+    params.get('did')
+    ?? 'did:3:bafyreifdypkct7falt5aqkeahfl552ktoxlyh7lmrf6pttlwnfseufh4fe'
   )
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
@@ -399,7 +401,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
                 >
                   {(suggestions === null) ? (
                     <>
-                      {did} is not a valid
+                      <q>{did}</q> is not a valid
                       <acronym title="Decentralized Identifier">
                         DID
                       </acronym>.
