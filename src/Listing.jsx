@@ -1,11 +1,12 @@
 import {
   Box, Button, Image, Input, InputGroup,
-  InputLeftAddon, Link, Spinner, Table,
+  InputLeftAddon, Link, ListItem, Spinner, Table,
   Tag, TagCloseButton, TagLabel, Tbody, Td,
-  Text, Th, Thead, Tooltip, Tr, useDisclosure,
+  Text, Th, Thead, Tooltip, Tr, UnorderedList, useDisclosure,
   useToast, Wrap,
 } from '@chakra-ui/react'
 import {
+  useCallback,
   useContext, useEffect, useRef, useState
 } from 'react'
 import { TileDocument } from '@ceramicnetwork/stream-tile'
@@ -45,88 +46,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
   const toast = useToast()
   const { isOpen, onOpen, onClose } = useDisclosure()
 
-  const dispatch = async (evt) => {
-    const raw = evt.target.value
-    const tag = raw.trim()
-
-    if(evt.ctrlKey && evt.shiftKey && evt.key === 'Enter') {
-      if(window.confirm('Clear All Data‽')) {
-        if(!idx.ceramic.did) {
-          alert('¡Connect to Ceramic!')
-        } else {
-          await idx.set('mïmis', {})
-          toast({
-            title: 'Reset File Paths.',
-            description: 'The filesystem has been cleared.',
-            status: 'success',
-            duration: 5000,
-            isClosable: true,
-          })
-        }
-      }
-    } else if(evt.ctrlKey && evt.key === 'Enter') {
-      try {
-        await writePath({ path: tags })
-        toast({
-          title: 'Created Path.',
-          description: `${tags[tags.length - 1]} has been added.`,
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        })
-      } catch(e) {
-      } finally {
-      }
-    } else if(/^(Arrow)?Up$/.test(evt.key)) {
-      setSelected((s) => {
-        if(s === null || s > suggestions.length || s < 0) {
-          return suggestions.length - 1
-        }
-        return s - 1
-      })
-    } else if(/^(Arrow)?Down$/.test(evt.key)) {
-      setSelected((s) => {
-        if(s === null || s > suggestions.length || s < 0) {
-          return 0
-        }
-        return s + 1
-      })
-    } else if(/^(Arrow)?Right$/.test(evt.key)) {
-      if(!loading && suggestions.length === 1) {
-        if(elem === suggestions[0]) {
-          add(tag)
-        } else {
-          text(suggestions[0])
-        }
-      } else {
-        if(
-          selected !== null
-          && selected >= 0
-          && selected < suggestions.length
-        ) {
-          text(suggestions[selected])
-        }
-      }
-    } else if(evt.key === 'Enter' && tag !== '') {
-      add(tag)
-    } else if(
-      (
-        evt.key === 'Backspace'
-        || /^(Arrow)?Left$/.test(evt.key)
-      )
-      && raw === ''
-    ) {
-      remove(tags.length - 1)
-    } else if(!evt.key) { // onChange, could easily be a separate function
-      text(raw)
-    }
-  }
-  const text = (string) => {
-    setLoading(true)
-    setElem(string)
-    setSearch(s => ({ path: s.path, string }))
-  }
-  const add = (term) => {
+  const add = useCallback((term) => {
     setLoading(true)
     setTags(ts => {
       const path = [...ts, term]
@@ -134,16 +54,21 @@ export default ({ ceramicURI, setCeramicURI }) => {
       return path
     })
     setElem('')
-  }
-  const remove = (idx) => {
+  }, [setSearch])
+  const remove = useCallback((idx) => {
     setLoading(true)
     setTags((ts) => {
       const copy = [...ts].slice(0, idx)
       setSearch({ path: copy, string: elem })
       return copy
     })
-  }
-  const writePath = async ({
+  }, [elem, setSearch])
+  const text = useCallback((string) => {
+    setLoading(true)
+    setElem(string)
+    setSearch(s => ({ path: s.path, string }))
+  }, [setSearch])
+  const writePath = useCallback(async ({
     path, cid = null, filename = null,
   }) => {
     if(path.length === 0) return
@@ -160,6 +85,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
     } else {
       const urls = []
       const entry = await idx.get('mïmis', did)
+      console.info('Entry', entry)
       let root = entry
       const forward = []
       const url = root?.[path[0]]
@@ -237,6 +163,84 @@ export default ({ ceramicURI, setCeramicURI }) => {
         console.info('No Changes')
       }
     }
+  }, [did, idx, toast])
+  const dispatch = useCallback(async (evt) => {
+    const raw = evt.target.value
+    const tag = raw.trim()
+
+    if(evt.ctrlKey && evt.shiftKey && evt.key === 'Enter') {
+      if(window.confirm('Clear All Data‽')) {
+        if(!idx.ceramic.did) {
+          alert('¡Connect to Ceramic!')
+        } else {
+          await idx.set('mïmis', {})
+          toast({
+            title: 'Reset File Paths.',
+            description: 'The filesystem has been cleared.',
+            status: 'success',
+            duration: 5000,
+            isClosable: true,
+          })
+        }
+      }
+    } else if(evt.ctrlKey && evt.key === 'Enter') {
+      console.info('Writing', tags)
+      try {
+        await writePath({ path: tags })
+        toast({
+          title: 'Created Path.',
+          description: `${tags[tags.length - 1]} has been added.`,
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        })
+      } catch(e) {
+      } finally {
+      }
+    } else if(/^(Arrow)?Up$/.test(evt.key)) {
+      setSelected((s) => {
+        if(s === null || s > suggestions?.length || s < 0) {
+          return suggestions?.length - 1
+        }
+        return s - 1
+      })
+    } else if(/^(Arrow)?Down$/.test(evt.key)) {
+      setSelected((s) => {
+        if(s === null || s > suggestions?.length || s < 0) {
+          return 0
+        }
+        return s + 1
+      })
+    } else if(/^(Arrow)?Right$/.test(evt.key)) {
+      if(!loading && suggestions?.length === 1) {
+        if(elem === suggestions?.[0]) {
+          add(tag)
+        } else {
+          text(suggestions?.[0])
+        }
+      } else {
+        if(
+          selected !== null
+          && selected >= 0
+          && selected < suggestions?.length
+        ) {
+          text(suggestions?.[selected])
+        }
+      }
+    } else if(evt.key === 'Enter' && tag !== '') {
+      add(tag)
+    } else if(
+      (
+        evt.key === 'Backspace'
+        || /^(Arrow)?Left$/.test(evt.key)
+      )
+      && raw === ''
+    ) {
+      remove(tags.length - 1)
+    }
+  }, [add, elem, idx, loading, remove, selected, suggestions, tags, text, toast, writePath])
+  const update = (evt) => {
+    text(evt.target.value)
   }
   const upload = async (evt) => {
     const files = evt.target.files
@@ -272,6 +276,13 @@ export default ({ ceramicURI, setCeramicURI }) => {
       setDID(idx.ceramic.did.id)
     }
   }, [idx?.ceramic?.did?.id])
+
+  useEffect(() => {
+    window.addEventListener('keypress', dispatch, false)
+    return () => {
+      window.removeEventListener('keypress', dispatch, false)
+    }
+  }, [dispatch])
 
   return (
     <>
@@ -340,14 +351,24 @@ export default ({ ceramicURI, setCeramicURI }) => {
               <TagCloseButton onClick={() => remove(idx)}/>
             </Tag>
           ))}
-          <Input
-            maxW="21rem" borderWidth={3}
-            autoFocus grow={1}
-            onKeyDown={dispatch}
-            value={elem} ref={entry}
-            onChange={dispatch}
-            placeholder="^⏎ to write a path; →→ for autocomplete"
-          />
+          <Tooltip hasArrow label={
+            <UnorderedList>
+              <ListItem>Add text to search existing paths.</ListItem>
+              <ListItem>⏎ to add an element to the current path.</ListItem>
+              <ListItem>^⏎ to write a new path to the filesystem.</ListItem>
+              <ListItem>↑ &amp; ↓ to navigate the potential paths.</ListItem>
+              <ListItem>→ to select a path and → again to navigate.</ListItem>
+            </UnorderedList>
+          }>
+            <Input
+              maxW="21rem" borderWidth={3}
+              autoFocus grow={1}
+              onKeyDown={dispatch}
+              value={elem} ref={entry}
+              onChange={update}
+              placeholder="Add Path Elements"
+            />
+          </Tooltip>
         </Wrap>
         {(() => {
           if(loading) {
@@ -361,14 +382,14 @@ export default ({ ceramicURI, setCeramicURI }) => {
           if(typeof suggestions === 'string') {
             let url = suggestions
             const match = (
-              url.match(/^ipfs:\/\/(.+)$/)
+              url.match(/^(ip[fn]s):\/\/(.+)$/)
             )
             if(match) {
-              url = `http://ipfs.io/ipfs/${match[1]}`
+              url = `http://ipfs.io/${match[1]}/${match[2]}`
             }
             return <Image src={url} m="auto" mt={5} maxH="80vh"/>
           }
-          if(suggestions.length === 0) {
+          if(suggestions === null || suggestions?.length === 0) {
             return (
               <Box mt="30vh">
                 <Text
@@ -376,7 +397,16 @@ export default ({ ceramicURI, setCeramicURI }) => {
                   fontFamily="'Odibee Sans'"
                   fontSize={65}
                 >
-                  No path completions found…
+                  {(suggestions === null) ? (
+                    <>
+                      {did} is not a valid
+                      <acronym title="Decentralized Identifier">
+                        DID
+                      </acronym>.
+                    </>
+                  ) : (
+                    <>No path completions found…</>
+                  )}
                 </Text>
               </Box>
             )
