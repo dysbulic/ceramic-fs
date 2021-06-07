@@ -14,6 +14,11 @@ export default ({
   const ipfsRef = React.useRef()
   const [ipfs, setIPFS] = useState(ipfsURI)
   const [ceramic, setCeramic] = useState(ceramicURI)
+  const close = () => { // reset the inputs if the user hits "Cancel"
+    setIPFS(ipfsURI)
+    setCeramic(ceramicURI)
+    onClose()
+  }
   const save = () => {
     setIPFSURI(ipfs)
     setCeramicURI(ceramic)
@@ -25,7 +30,7 @@ export default ({
       initialFocusRef={ipfsRef}
       {...{ finalFocusRef }}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={close}
     >
       <ModalOverlay/>
       <ModalContent>
@@ -63,11 +68,10 @@ export default ({
             <Button
               type="submit"
               colorScheme="blue" mr={3}
-              onClick={save}
             >
               Save
             </Button>
-            <Button onClick={onClose}>Cancel</Button>
+            <Button onClick={close}>Cancel</Button>
           </ModalFooter>
         </FormControl>
       </ModalContent>
