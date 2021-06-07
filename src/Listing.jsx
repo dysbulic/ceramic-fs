@@ -25,7 +25,7 @@ const colors = [
 ]
 
 // eslint-disable-next-line import/no-anonymous-default-export
-export default ({ ceramicURI, setCeramicURI }) => {
+export default ({ ceramicURI, setCeramicURI, myDID }) => {
   const idx = useContext(IDXContext)
   const [tags, setTags] = useState([])
   const [elem, setElem] = useState('')
@@ -36,7 +36,6 @@ export default ({ ceramicURI, setCeramicURI }) => {
   )
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
-  const [myDID, setMyDID] = useState(null)
   const [suggestions, setSearch] = (
     useSuggestions({ did, setLoading })
   )
@@ -48,6 +47,8 @@ export default ({ ceramicURI, setCeramicURI }) => {
   const ipfs = ipfsHttpClient(ipfsURI)
   const toast = useToast()
   const { isOpen, onOpen, onClose } = useDisclosure()
+
+    console.info('DID', myDID)
 
   const add = useCallback((term) => {
     setLoading(true)
@@ -272,13 +273,6 @@ export default ({ ceramicURI, setCeramicURI }) => {
   useEffect(() => {
     setLoading(false)
   }, [suggestions])
-
-  useEffect(() => {
-    console.info('MyDID', idx?.ceramic?.did?.id)
-    if(idx?.ceramic?.did?.id) {
-      setMyDID(idx.ceramic.did.id)
-    }
-  }, [idx?.ceramic?.did?.id])
 
   useEffect(() => {
     window.addEventListener('keypress', dispatch, false)

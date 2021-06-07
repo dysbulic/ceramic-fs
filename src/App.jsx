@@ -12,11 +12,15 @@ import { IDXContext } from './IDXContext'
 // eslint-disable-next-line import/no-anonymous-default-export
 export default () => {
   const [ceramicURI, setCeramicURI] = useState(
-    // process.env.REACT_APP_CERAMIC_URL ?? 'http://localhost:7007'
-    process.env.REACT_APP_CERAMIC_URI ?? 'https://ceramic-clay.3boxlabs.com'
+    process.env.REACT_APP_CERAMIC_URI
+    ?? 'https://ceramic-clay.3boxlabs.com'
   )
-  const ceramic = useMemo(() => new Ceramic(ceramicURI), [ceramicURI])
-  const aliases = useMemo(() => ({ mïmis: defs.definitions.mïmis }), [])
+  const ceramic = useMemo(() => (
+    new Ceramic(ceramicURI), [ceramicURI]
+  ))
+  const aliases = useMemo(() => (
+    { mïmis: defs.definitions.mïmis }), []
+  )
   const idx = useMemo(
     () => new IDX({ ceramic, aliases }),
     [aliases, ceramic]
@@ -24,7 +28,7 @@ export default () => {
   const [addr, setAddr] = useState(null)
   const [loggingIn, setLoggingIn] = useState(false)
   const threeIdConnect = new ThreeIdConnect()
-  const setRedraw = useState(false)[1]
+  const [myDID, setMyDID] = useState(null)
 
   const connect = async () => {
     const addresses = await (
@@ -42,11 +46,11 @@ export default () => {
     })
     await did.authenticate()
     ceramic.setDID(did)
-    setRedraw(d => !d) // force redraw
+    setMyDID(did.id)
   }
   const disconnect = () => {
-    ceramic.setDID(undefined) // this doesn't work
-    setRedraw(d => !d) // force redraw
+    ceramic.setDID(undefined)
+    setMyDID(null)
   }
 
   useEffect(
@@ -60,8 +64,8 @@ export default () => {
         {(() => {
           const [text, onClick, colorScheme] = (
             idx.ceramic.did
-            ? ( ['Disconnect', disconnect, "red"] )
-            : ( ['Connect', connect, "green"] )
+            ? ( ['Disconnect', disconnect, 'red'] )
+            : ( ['Connect', connect, 'green'] )
           )
           return (
             <Button
@@ -79,7 +83,7 @@ export default () => {
             </Button>
           )
         })()}
-        <Listing {...{ ceramicURI, setCeramicURI }}/>
+        <Listing {...{ ceramicURI, setCeramicURI, myDID }}/>
       </ChakraProvider>
     </IDXContext.Provider>
   )
