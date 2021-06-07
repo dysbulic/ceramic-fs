@@ -1,6 +1,6 @@
 import {
   Box, Button, Image, Input, InputGroup,
-  InputLeftAddon, Link, ListItem, Spinner, Table,
+  InputLeftAddon, InputRightAddon, Link, ListItem, Spinner, Table,
   Tag, TagCloseButton, TagLabel, Tbody, Td,
   Text, Th, Thead, Tooltip, Tr, UnorderedList, useDisclosure,
   useToast, Wrap,
@@ -36,6 +36,7 @@ export default ({ ceramicURI, setCeramicURI }) => {
   )
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
+  const [myDID, setMyDID] = useState(null)
   const [suggestions, setSearch] = (
     useSuggestions({ did, setLoading })
   )
@@ -87,7 +88,6 @@ export default ({ ceramicURI, setCeramicURI }) => {
     } else {
       const urls = []
       const entry = await idx.get('mïmis', did)
-      console.info('Entry', entry)
       let root = entry
       const forward = []
       const url = root?.[path[0]]
@@ -274,8 +274,9 @@ export default ({ ceramicURI, setCeramicURI }) => {
   }, [suggestions])
 
   useEffect(() => {
+    console.info('MyDID', idx?.ceramic?.did?.id)
     if(idx?.ceramic?.did?.id) {
-      setDID(idx.ceramic.did.id)
+      setMyDID(idx.ceramic.did.id)
     }
   }, [idx?.ceramic?.did?.id])
 
@@ -333,11 +334,20 @@ export default ({ ceramicURI, setCeramicURI }) => {
       </Link>
       <Box mr="10em">
         <InputGroup maxW="42rem" m="auto" mt={5}>
-          <InputLeftAddon children="DID" title="Decentralized Identifier" />
+          <InputLeftAddon
+            children="DID"
+            title="Decentralized Identifier"
+          />
           <Input
             borderWidth={3} textAlign="center"
             value={did} onChange={evt => setDID(evt.target.value)}
           />
+          {myDID && (
+            <InputRightAddon
+              children="←" title="Use Your DID"
+              onClick={() => setDID(myDID)}
+            />
+          )}
         </InputGroup>
         <Wrap justify="center" mt={5}>
           {tags.map((tag, idx) => (
