@@ -3,7 +3,7 @@ import { Button, ChakraProvider } from '@chakra-ui/react'
 import ThreeIdResolver from '@ceramicnetwork/3id-did-resolver'
 import Ceramic from '@ceramicnetwork/http-client'
 import { DID } from 'dids'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { IDX } from '@ceramicstudio/idx'
 import defs from './definitionIDs.json'
 import Listing from './Listing'
@@ -15,11 +15,11 @@ export default () => {
     process.env.REACT_APP_CERAMIC_URI
     ?? 'https://ceramic-clay.3boxlabs.com'
   )
-  const ceramic = useMemo(() => (
-    new Ceramic(ceramicURI), [ceramicURI]
-  ))
-  const aliases = useMemo(() => (
-    { mïmis: defs.definitions.mïmis }), []
+  const ceramic = useMemo(
+    () => new Ceramic(ceramicURI), [ceramicURI]
+  )
+  const aliases = useMemo(
+    () => ({ mïmis: defs.definitions.mïmis }), []
   )
   const idx = useMemo(
     () => new IDX({ ceramic, aliases }),
@@ -48,10 +48,14 @@ export default () => {
     ceramic.setDID(did)
     setMyDID(did.id)
   }
-  const disconnect = () => {
+  const disconnect = useCallback(() => {
     ceramic.setDID(undefined)
     setMyDID(null)
-  }
+  }, [ceramic])
+
+  useEffect(() => {
+    window.ethereum.on('accountsChanged', disconnect)
+  }, [disconnect])
 
   useEffect(
     () => { setLoggingIn(false) },

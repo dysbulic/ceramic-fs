@@ -48,8 +48,6 @@ export default ({ ceramicURI, setCeramicURI, myDID }) => {
   const toast = useToast()
   const { isOpen, onOpen, onClose } = useDisclosure()
 
-    console.info('DID', myDID)
-
   const add = useCallback((term) => {
     setLoading(true)
     setTags(ts => {
@@ -151,15 +149,19 @@ export default ({ ceramicURI, setCeramicURI, myDID }) => {
         await idx.merge('mïmis', {
           [path[0]]: backward[0]?.id.toUrl() ?? null
         })
-      } else if(found < path.length) {
+      } else if(backward.length > 0) {
+        if(forward.length === 0) {
+          forward.push({ content: entry })
+        }
+
         const [parent] = forward.slice(-1)
         const child = backward[0]
-        const content = await TileDocument.load(
+        const existing = await TileDocument.load(
           idx.ceramic, parent.content[path[found - 1]]
         )
 
-        await content.update({
-          ...content.content,
+        await existing.update({
+          ...existing.content,
           ...child.content,
         })
       } else {
@@ -322,7 +324,7 @@ export default ({ ceramicURI, setCeramicURI, myDID }) => {
         <Tooltip hasArrow label="GitHub">
           <Image
             src={octocat} position="fixed"
-            boxSize="5vw" bottom={0} right={6}
+            boxSize="10vw" bottom={0} right={6}
           />
         </Tooltip>
       </Link>
@@ -333,12 +335,12 @@ export default ({ ceramicURI, setCeramicURI, myDID }) => {
             title="Decentralized Identifier"
           />
           <Input
-            borderWidth={3} textAlign="center"
-            value={did} onChange={evt => setDID(evt.target.value)}
+            borderWidth={3} textAlign="center" value={did}
+            onChange={evt => setDID(evt.target.value)}
           />
           {myDID && (
             <InputRightAddon
-              children="←" title="Use Your DID"
+              children="🡄" title="Use Your DID"
               onClick={() => setDID(myDID)}
             />
           )}
