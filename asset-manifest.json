@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.js": "/ceramic-fs/static/js/main.861768d7.chunk.js",
-    "main.js.map": "/ceramic-fs/static/js/main.861768d7.chunk.js.map",
+    "main.js": "/ceramic-fs/static/js/main.5c0e8f60.chunk.js",
+    "main.js.map": "/ceramic-fs/static/js/main.5c0e8f60.chunk.js.map",
     "runtime-main.js": "/ceramic-fs/static/js/runtime-main.59023077.js",
     "runtime-main.js.map": "/ceramic-fs/static/js/runtime-main.59023077.js.map",
     "static/js/2.2e753b23.chunk.js": "/ceramic-fs/static/js/2.2e753b23.chunk.js",
@@ -15,6 +15,6 @@
   "entrypoints": [
     "static/js/runtime-main.59023077.js",
     "static/js/2.2e753b23.chunk.js",
-    "static/js/main.861768d7.chunk.js"
+    "static/js/main.5c0e8f60.chunk.js"
   ]
 }
